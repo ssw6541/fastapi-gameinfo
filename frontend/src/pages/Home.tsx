@@ -5,7 +5,7 @@ import { api, fmtNum, fmtPrice, type Genre, type GameSummary, type Status } from
 import Carousel from '../components/Carousel'
 import { CardSkeletons, EmptyState, ErrorState, GameCard } from '../components/common'
 import {
-  GameList2, PromoBanners, RankList, RecentPanel, ReleaseCalendar, ReviewFeed, SaleFeed, SectionHead, TrailerRow,
+  GameList2, PromoBanners, RankList, RecentPanel, ReleaseCalendar, ReviewFeed, SaleFeed, SectionHead,
   type Promo,
 } from '../components/HomeSections'
 
@@ -81,7 +81,6 @@ export default function Home() {
           </section>
 
           <ReviewFeed game={pop.data?.[0]} />
-          <TrailerRow />
           <ReleaseCalendar games={calendar} />
 
           <section className="panel" ref={browse} id="browse">

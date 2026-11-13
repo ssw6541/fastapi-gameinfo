@@ -149,7 +149,6 @@ test('portal home sections render with real data', async ({ page }) => {
   await expect(page.locator('.ranklist li').first()).toBeVisible({ timeout: 30_000 })
   await expect(page.getByRole('heading', { name: /인기 게임 TOP5/ })).toBeVisible()
   await expect(page.locator('.feed li').first()).toBeVisible({ timeout: 40_000 })
-  await expect(page.locator('.trailer-card').first()).toBeVisible()
   await expect(page.locator('.daytab')).toHaveCount(7)
   // recently viewed is recorded after visiting a game
   await page.locator('.promo').first().click()

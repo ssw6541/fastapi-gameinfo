@@ -122,13 +122,6 @@ export interface ReviewStats {
   };
   cached: boolean;
 }
-export interface Trailer {
-  appid: number
-  name: string | null
-  thumbnail: string | null
-  hls: string | null
-  url: string | null
-}
 export interface Me {
   logged_in: boolean;
   steamid?: string;

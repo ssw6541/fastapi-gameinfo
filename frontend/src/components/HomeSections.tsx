@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  api, fmtDate, fmtHours, fmtNum, fmtPrice, type GameSummary, type ReviewsResponse, type Trailer,
+  api, fmtDate, fmtHours, fmtNum, fmtPrice, type GameSummary, type ReviewsResponse,
 } from '../api'
 import { imgFallback } from './common'
 
@@ -144,77 +144,6 @@ export function ReviewFeed({ game }: { game: GameSummary | undefined }) {
           </li>
         ))}
       </ul>
-    </section>
-  )
-}
-
-/* ------------------------------------------------------------ trailers ("인기 동영상" analogue) */
-function TrailerPlayer({ t, onClose }: { t: Trailer; onClose: () => void }) {
-  const ref = useRef<HTMLVideoElement>(null)
-  const [failed, setFailed] = useState(false)
-  useEffect(() => {
-    const v = ref.current
-    if (!v) return
-    const onPlaying = () => setFailed(false) // a started video is never a failure
-    v.addEventListener('playing', onPlaying)
-    let hls: { destroy: () => void } | undefined
-    let cancelled = false
-    ;(async () => {
-      try {
-        if (t.url) { v.src = t.url; await v.play(); return }
-        if (!t.hls) throw new Error('no source')
-        if (v.canPlayType('application/vnd.apple.mpegurl')) { v.src = t.hls; await v.play(); return }
-        const { default: Hls } = await import('hls.js') // loaded only when someone presses play
-        if (cancelled) return
-        if (!Hls.isSupported()) throw new Error('hls unsupported')
-        const h = new Hls()
-        hls = h
-        let retries = 0
-        h.on(Hls.Events.ERROR, (_e, d) => {
-          if (!d.fatal) return
-          // recover once from transient network/media glitches before giving up
-          if (retries++ < 2 && d.type === Hls.ErrorTypes.NETWORK_ERROR) h.startLoad()
-          else if (retries <= 2 && d.type === Hls.ErrorTypes.MEDIA_ERROR) h.recoverMediaError()
-          else setFailed(true)
-        })
-        h.loadSource(t.hls)
-        h.attachMedia(v)
-        v.play().catch(() => { /* autoplay blocked: controls are visible */ })
-      } catch { setFailed(true) }
-    })()
-    return () => { cancelled = true; hls?.destroy(); v.removeEventListener('playing', onPlaying) }
-  }, [t])
-  return (
-    <div className="tr-player">
-      <video ref={ref} controls autoPlay playsInline poster={t.thumbnail ?? undefined} />
-      {failed && <p className="tr-fail">영상을 재생할 수 없습니다. <Link to={`/game/${t.appid}`}>게임 페이지에서 보기</Link></p>}
-      <button className="tr-close" onClick={onClose} aria-label="닫기">✕</button>
-    </div>
-  )
-}
-
-export function TrailerRow() {
-  const q = useQuery({ queryKey: ['trailers'], queryFn: ({ signal }) => api<Trailer[]>('/games/trailers', { limit: 3 }, signal) })
-  const [playing, setPlaying] = useState<number | null>(null)
-  if (q.isLoading || q.isError || !q.data || q.data.length === 0) return null
-  return (
-    <section className="panel">
-      <SectionHead en="TRAILER" title="인기 게임 트레일러" />
-      <div className="trailers">
-        {q.data.map((t) => (
-          <div key={t.appid} className="trailer-card">
-            {playing === t.appid
-              ? <TrailerPlayer t={t} onClose={() => setPlaying(null)} />
-              : (
-                <button className="tr-thumb" onClick={() => setPlaying(t.appid)} aria-label={`${t.name} 트레일러 재생`}>
-                  <img src={t.thumbnail ?? ''} alt="" loading="lazy" />
-                  <span className="tr-play px" aria-hidden>▶</span>
-                </button>
-              )}
-            <Link to={`/game/${t.appid}`} className="tr-title">{t.name}</Link>
-          </div>
-        ))}
-      </div>
     </section>
   )
 }

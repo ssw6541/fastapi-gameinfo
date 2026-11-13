@@ -49,15 +49,6 @@ class Movie(BaseModel):
     name: str | None
     thumbnail: str | None
     url: str | None = None
-    hls: str | None = None
-
-
-class Trailer(BaseModel):
-    appid: int
-    name: str | None
-    thumbnail: str | None
-    hls: str | None
-    url: str | None
 
 
 class GameDetail(BaseModel):

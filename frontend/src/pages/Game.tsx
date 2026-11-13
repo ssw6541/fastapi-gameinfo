@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, api, fmtDate, fmtNum, fmtPrice, type GameDetail } from '../api'
 import { ErrorState, Spinner } from '../components/common'
+import { rememberGame } from '../components/HomeSections'
 import { ReviewsSection, StatsSection } from '../components/Reviews'
 
 function Gallery({ shots, title }: { shots: string[]; title: string }) {
@@ -38,7 +39,11 @@ export default function Game() {
     enabled: valid,
   })
   const [more, setMore] = useState(false)
-  useEffect(() => { if (q.data) document.title = `${q.data.name} · GameLens` }, [q.data])
+  useEffect(() => {
+    if (!q.data) return
+    document.title = `${q.data.name} · GameLens`
+    rememberGame({ appid: q.data.appid, name: q.data.name ?? `App ${q.data.appid}`, img: q.data.header_image })
+  }, [q.data])
 
   if (!valid) return <ErrorState error={new ApiError(404, 'not_found', '올바르지 않은 AppID입니다.')} />
   if (q.isLoading) return <Spinner label="게임 정보를 불러오는 중…" />

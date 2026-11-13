@@ -19,6 +19,7 @@ async def main() -> None:
     sub.add_parser("crawl-applist")
     r = sub.add_parser("refresh-details")
     r.add_argument("--limit", type=int, default=50)
+    r.add_argument("--force", action="store_true")
     sub.add_parser("stats")
     a = p.parse_args()
 
@@ -33,7 +34,7 @@ async def main() -> None:
         elif a.cmd == "crawl-applist":
             out = await collector.crawl_applist(db, steam)
         elif a.cmd == "refresh-details":
-            out = await collector.refresh_details(db, steam, s, limit=a.limit)
+            out = await collector.refresh_details(db, steam, s, limit=a.limit, force=a.force)
         else:
             out = await catalog.catalog_stats(db)
         print(json.dumps(out, ensure_ascii=False))

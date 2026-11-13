@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Path, Query
 from ..config import Settings
 from ..deps import get_cfg, get_db, get_steam, rate_limit
 from ..errors import UpstreamError
-from ..schemas import (Genre, GameDetail, ReviewSort, ReviewStats, ReviewsResponse, SearchResponse, SortKey, GameSummary)
+from ..schemas import (Trailer, Genre, GameDetail, ReviewSort, ReviewStats, ReviewsResponse, SearchResponse, SortKey, GameSummary)
 from ..services import catalog, games, reviews
 from ..steam.client import SteamClient
 from ..steam.parsers import GENRE_TAGS, REVIEW_LANGUAGES
@@ -79,6 +79,11 @@ async def home_tab(db: Db, steam: Steam, tab: Annotated[str, Query(pattern="^(ne
         from ..errors import AppError
         raise AppError(422, "invalid_genre", "지원하지 않는 장르입니다.")
     return await catalog.home_list(db, steam, tab, limit, genre)
+
+
+@router.get("/games/trailers", response_model=list[Trailer], summary="인기 게임 트레일러")
+async def trailers(db: Db, limit: Annotated[int, Query(ge=1, le=12)] = 3):
+    return await catalog.trailers(db, limit)
 
 
 @router.get("/games/{appid}", response_model=GameDetail, summary="게임 상세 정보")

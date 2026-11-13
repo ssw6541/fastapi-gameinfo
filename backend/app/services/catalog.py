@@ -243,6 +243,26 @@ async def home_list(db: aiosqlite.Connection, steam: SteamClient, tab: str, limi
     return [to_summary(by_id[i], tags[i]) for i in ids if i in by_id]
 
 
+async def trailers(db: aiosqlite.Connection, limit: int) -> list[dict]:
+    """Highlight trailers of the most-reviewed games whose details we already stored (no extra Steam calls)."""
+    out: list[dict] = []
+    async with db.execute("SELECT appid, name_ko, name_en, detail_json FROM games WHERE detail_json IS NOT NULL "
+                          "ORDER BY review_count DESC NULLS LAST LIMIT 60") as c:
+        rows = await c.fetchall()
+    for r in rows:
+        try:
+            movies = json.loads(r["detail_json"]).get("movies") or []
+        except ValueError:
+            continue
+        m = next((x for x in movies if (x.get("hls") or x.get("url")) and x.get("thumbnail")), None)
+        if m:
+            out.append({"appid": r["appid"], "name": r["name_ko"] if r["name_ko"] != r["name_en"] and r["name_ko"] else r["name_en"],
+                        "thumbnail": m["thumbnail"], "hls": m.get("hls"), "url": m.get("url")})
+        if len(out) >= limit:
+            break
+    return out
+
+
 async def list_genres(db: aiosqlite.Connection) -> list[dict]:
     counts: dict[int, int] = {}
     async with db.execute("SELECT tag_id, COUNT(*) n FROM game_tags GROUP BY tag_id") as c:

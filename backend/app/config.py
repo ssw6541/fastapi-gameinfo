@@ -26,7 +26,9 @@ class Settings(BaseSettings):
 
     cache_ttl_seconds: int = 300
     detail_ttl_seconds: int = 86400
-    rate_limit_per_minute: int = 120
+    rate_limit_per_minute: int = 240
+    # Behind a trusted reverse proxy (Vercel rewrite) the real client IP is in X-Forwarded-For.
+    trust_proxy: bool = False
     admin_token: str = ""
 
     # Steam login (OpenID 2.0). public_base_url = the origin users see (Vercel domain in prod, Vite in dev).

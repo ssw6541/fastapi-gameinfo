@@ -88,8 +88,8 @@ async def crawl_applist(db: aiosqlite.Connection, steam: SteamClient, *, max_pag
     return {"pages": pages, "rows": rows}
 
 
-async def refresh_details(db: aiosqlite.Connection, steam: SteamClient, s: Settings, *, limit: int = 50) -> dict:
-    cutoff = int(time.time()) - s.detail_ttl_seconds
+async def refresh_details(db: aiosqlite.Connection, steam: SteamClient, s: Settings, *, limit: int = 50, force: bool = False) -> dict:
+    cutoff = int(time.time()) + 1 if force else int(time.time()) - s.detail_ttl_seconds  # force: refresh the top games regardless of age
     async with db.execute(
         "SELECT appid FROM games WHERE detail_fetched_at IS NULL OR detail_fetched_at < ? "
         "ORDER BY review_count DESC NULLS LAST LIMIT ?", (cutoff, limit)) as c:

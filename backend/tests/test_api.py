@@ -283,3 +283,27 @@ def test_home_genre(ctx):
     assert c.get("/api/games/home?tab=new&genre=122").status_code == 200
     assert rec.search_params["tags"] == "122"
     assert c.get("/api/games/home?tab=new&genre=999999").status_code == 422
+
+
+def test_trailers_from_stored_details(ctx):
+    c, _, s = ctx
+    assert c.get("/api/games/trailers").json() == []
+    import asyncio, json
+    from app.db import connect
+
+    async def put():
+        db = await connect(s.db_file)
+        d = {"movies": [{"name": "t", "thumbnail": "https://x/t.jpg", "hls": "https://x/m.m3u8", "url": None}]}
+        await db.execute("INSERT INTO games(appid,name_en,review_count,detail_json,listed_at,updated_at) VALUES(5,'G',10,?,0,0)", (json.dumps(d),))
+        await db.commit(); await db.close()
+    asyncio.run(put())
+    r = c.get("/api/games/trailers?limit=2").json()
+    assert r == [{"appid": 5, "name": "G", "thumbnail": "https://x/t.jpg", "hls": "https://x/m.m3u8", "url": None}]
+
+
+def test_rate_limit_uses_forwarded_ip_only_when_trusted(tmp_path):
+    for trust, expected in ((True, [200, 200, 200, 200]), (False, [200, 200, 429, 429])):
+        s = Settings(database_path=str(tmp_path / f"t{trust}.db"), rate_limit_per_minute=2, trust_proxy=trust, _env_file=None)
+        with TestClient(create_app(s, SteamClient(s, transport=httpx.MockTransport(Recorder())))) as c:
+            codes = [c.get("/api/genres", headers={"x-forwarded-for": f"1.2.3.{i % 2 + 1}"}).status_code for i in range(4)]
+        assert codes == expected, (trust, codes)

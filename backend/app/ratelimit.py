@@ -26,4 +26,9 @@ class RateLimiter:
 
 
 def client_ip(request: Request) -> str:
+    if request.app.state.settings.trust_proxy:
+        fwd = request.headers.get("x-forwarded-for", "")
+        first = fwd.split(",")[0].strip()
+        if first and len(first) <= 45:
+            return first
     return request.client.host if request.client else "unknown"

@@ -178,8 +178,9 @@ def normalize_details(ko: dict, en: dict | None = None) -> dict:
         "screenshots": [s.get("path_full") for s in ko.get("screenshots") or [] if s.get("path_full")][:12],
         "movies": [
             {"name": m.get("name"), "thumbnail": m.get("thumbnail"),
-             "url": (m.get("mp4") or {}).get("480") or (m.get("webm") or {}).get("480")}
-            for m in (ko.get("movies") or [])[:3] if (m.get("mp4") or m.get("webm"))
+             "url": (m.get("mp4") or {}).get("480") or (m.get("webm") or {}).get("480"),
+             "hls": m.get("hls_h264")}
+            for m in (ko.get("movies") or [])[:3] if (m.get("mp4") or m.get("webm") or m.get("hls_h264"))
         ],
         "store_url": f"https://store.steampowered.com/app/{appid}",
     }

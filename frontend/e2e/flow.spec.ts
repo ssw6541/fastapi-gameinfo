@@ -122,19 +122,16 @@ test('genre chips on every tab, topbar search after scroll, menu, steam login li
   await expect(page.locator('.grid a.card .tags').first()).toContainText('RPG', { timeout: 30_000 })
   await expect(page.locator('.grid a.card').first()).toBeVisible()
 
-  // topbar search appears after the hero search scrolls away and works
-  await page.evaluate(() => window.scrollTo(0, 0))
-  await expect(page.locator('.topsearch.hidden')).toHaveCount(1)
-  await page.evaluate(() => window.scrollTo(0, 1200))
-  await expect(page.locator('.topsearch.hidden')).toHaveCount(0)
+  // topbar search is always available (even after scrolling) and works
+  await page.evaluate(() => window.scrollTo(0, 1500))
   const box = page.locator('.topsearch').getByRole('searchbox')
+  await expect(box).toBeVisible()
   await box.fill('hades')
   await box.press('Enter')
   await expect(page).toHaveURL(/\/search\?q=hades/)
 
-  // menu button
-  await page.getByRole('button', { name: /MENU/ }).click()
-  await page.getByRole('link', { name: /할인 중/ }).click()
+  // inline top navigation (desktop)
+  await page.locator('.topnav').getByRole('link', { name: '할인 중' }).click()
   await expect(page).toHaveURL(/tab=sale/)
   await expect(page.getByRole('tab', { name: '할인 중', exact: true })).toHaveAttribute('aria-selected', 'true')
 
@@ -143,4 +140,33 @@ test('genre chips on every tab, topbar search after scroll, menu, steam login li
   const res = await page.request.get('/api/auth/steam/login?next=/', { maxRedirects: 0 })
   expect(res.status()).toBe(302)
   expect(res.headers()['location']).toContain('https://steamcommunity.com/openid/login')
+})
+
+
+test('portal home sections render with real data', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('.promo')).toHaveCount(3, { timeout: 30_000 })
+  await expect(page.locator('.ranklist li').first()).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('heading', { name: /인기 게임 TOP5/ })).toBeVisible()
+  await expect(page.locator('.feed li').first()).toBeVisible({ timeout: 40_000 })
+  await expect(page.locator('.trailer-card').first()).toBeVisible()
+  await expect(page.locator('.daytab')).toHaveCount(7)
+  // recently viewed is recorded after visiting a game
+  await page.locator('.promo').first().click()
+  await expect(page).toHaveURL(/\/game\/\d+/)
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 30_000 })
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('gl_recent'))).toContain('appid')
+  await page.goto('/')
+  await expect(page.locator('.recent li').first()).toBeVisible()
+})
+
+test.describe('mobile menu', () => {
+  test.use({ viewport: { width: 390, height: 800 } })
+  test('MENU button navigates on small screens', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('.topnav')).toBeHidden()
+    await page.getByRole('button', { name: '메뉴' }).click()
+    await page.getByRole('link', { name: /신작/ }).first().click()
+    await expect(page).toHaveURL(/tab=new/)
+  })
 })

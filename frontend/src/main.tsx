@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { ApiError } from './api'
 import './styles.css'
+import './arcade.css'
 
 const client = new QueryClient({
   defaultOptions: {

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, fmtNum, type Genre, type GameSummary, type Status } from '../api'
+import Carousel from '../components/Carousel'
 import SearchBox from '../components/SearchBox'
 import { CardSkeletons, EmptyState, ErrorState, GameCard } from '../components/common'
 
@@ -17,6 +18,7 @@ export default function Home() {
   return (
     <>
       <section className="hero">
+        <div className="coin px">★ INSERT COIN ★</div>
         <h1>Steam 게임, <span className="grad">한 번에 검색</span>하고 리뷰까지</h1>
         <p>영어·한국어 이름으로 게임을 찾고, 상세 정보와 실제 Steam 사용자 리뷰를 필터링해 보세요.</p>
         <SearchBox autoFocus />
@@ -25,11 +27,12 @@ export default function Home() {
             수집된 게임 {fmtNum(status.data.catalog.games)}개 · 목록에 없는 게임도 검색 시 Steam에서 바로 찾아옵니다.
           </p>
         )}
+        <Carousel />
       </section>
 
       <section>
         <div className="section-head">
-          <h2>인기 게임</h2>
+          <h2><span className="px">RANKING</span> 인기 게임</h2>
           <Link to="/search?sort=reviews" className="muted">전체 보기 →</Link>
         </div>
         <div className="chips" role="group" aria-label="장르 필터">

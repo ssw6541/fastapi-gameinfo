@@ -44,11 +44,11 @@ async def _persist_details(db: aiosqlite.Connection, d: dict) -> None:
     await db.execute(
         """UPDATE games SET type=?, short_description=?, release_date=COALESCE(?, release_date),
            is_free=?, price_final=?, price_initial=?, discount_percent=?, currency=?,
-           detail_json=?, detail_fetched_at=?, updated_at=? WHERE appid=?""",
+           detail_json=?, detail_fetched_at=?, updated_at=?, header_url=? WHERE appid=?""",
         (d["type"], d["short_description"], d["release_date"], int(d["is_free"]),
          int(price["final"] * 100) if price else (0 if d["is_free"] else None),
          int(price["initial"] * 100) if price else None, (price or {}).get("discount_percent"),
-         (price or {}).get("currency"), json.dumps(d, ensure_ascii=False), now, now, d["appid"]),
+         (price or {}).get("currency"), json.dumps(d, ensure_ascii=False), now, now, d["header_image"], d["appid"]),
     )
     await db.commit()
 

@@ -88,7 +88,7 @@ def to_summary(r: aiosqlite.Row, genre_ids: list[int] | None = None) -> dict:
         "name": ko or r["name_en"],
         "name_en": r["name_en"],
         "name_ko": ko,
-        "header_image": header_image(appid),
+        "header_image": r["header_url"] or header_image(appid),
         "capsule_image": capsule_image(appid),
         "release_date": r["release_date"],
         "release_ts": r["release_ts"],

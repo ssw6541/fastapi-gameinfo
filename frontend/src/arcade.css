@@ -87,3 +87,19 @@ input[type=search]:focus { border-color: var(--accent2); box-shadow: var(--cyan-
 .tab:hover { color: var(--text); border-color: var(--accent); }
 .tab.on { color: #fff; background: var(--accent); border-color: var(--accent); border-bottom-color: #4a3fb3; box-shadow: var(--glow); }
 .tab-desc { margin: 0 0 14px; }
+
+/* topbar: search + menu + account */
+.topbar-in { gap: 14px; }
+.topsearch { flex: 1; min-width: 0; max-width: 560px; margin-inline: auto; transition: opacity .2s, transform .2s; }
+.topsearch.hidden { opacity: 0; transform: translateY(-6px); pointer-events: none; visibility: hidden; }
+.topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.menu, .account { position: relative; }
+.menu-btn { display: flex; align-items: center; gap: 8px; padding: 6px 12px; } .menu-btn .px { font-size: .62rem; }
+.menu-pop { position: absolute; top: calc(100% + 8px); right: 0; min-width: 230px; background: var(--panel); border: 2px solid var(--accent); border-radius: 4px; box-shadow: var(--glow), 4px 4px 0 rgba(0,0,0,.6); padding: 6px; display: grid; gap: 2px; z-index: 40; }
+.menu-item { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 12px; border-radius: 3px; color: var(--text); background: none; border: 0; font: inherit; cursor: pointer; text-align: left; width: 100%; }
+.menu-item:hover, .menu-item.active { background: var(--panel2); text-decoration: none; }
+.menu-item.active { box-shadow: inset 3px 0 0 var(--accent2); }
+.menu-item .dim { color: var(--accent2); font-size: .5rem; }
+.steam-login { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-weight: 700; white-space: nowrap; background: #1b2838; border-color: #3b5a78; } .steam-login:hover { border-color: var(--accent2); text-decoration: none; }
+.acct-btn { display: flex; align-items: center; gap: 8px; padding: 4px 10px; } .acct-btn img { border-radius: 2px; image-rendering: auto; } .acct-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 700px) { .login-txt, .acct-name { display: none; } .menu-btn .px { display: none; } .topbar-in { gap: 8px; } .topsearch { max-width: none; } .steam-login, .acct-btn { padding: 6px 9px; } .brand .px { display: none; } }

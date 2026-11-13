@@ -10,7 +10,7 @@ from ..errors import UpstreamError
 from ..schemas import (Genre, GameDetail, ReviewSort, ReviewStats, ReviewsResponse, SearchResponse, SortKey, GameSummary)
 from ..services import catalog, games, reviews
 from ..steam.client import SteamClient
-from ..steam.parsers import REVIEW_LANGUAGES
+from ..steam.parsers import GENRE_TAGS, REVIEW_LANGUAGES
 
 log = logging.getLogger("app.api")
 router = APIRouter(prefix="/api", dependencies=[Depends(rate_limit)])
@@ -73,8 +73,12 @@ async def featured(db: Db, genre: Annotated[int | None, Query()] = None, limit: 
 
 @router.get("/games/home", response_model=list[GameSummary], summary="홈 탭: 신작/할인/출시 예정")
 async def home_tab(db: Db, steam: Steam, tab: Annotated[str, Query(pattern="^(new|sale|upcoming)$")],
+                   genre: Annotated[int | None, Query(description="장르 태그 ID")] = None,
                    limit: Annotated[int, Query(ge=1, le=24)] = 12):
-    return await catalog.home_list(db, steam, tab, limit)
+    if genre is not None and genre not in GENRE_TAGS:
+        from ..errors import AppError
+        raise AppError(422, "invalid_genre", "지원하지 않는 장르입니다.")
+    return await catalog.home_list(db, steam, tab, limit, genre)
 
 
 @router.get("/games/{appid}", response_model=GameDetail, summary="게임 상세 정보")

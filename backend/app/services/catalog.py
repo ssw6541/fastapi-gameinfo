@@ -217,14 +217,14 @@ HOME_TABS = {
 }
 
 
-async def home_list(db: aiosqlite.Connection, steam: SteamClient, tab: str, limit: int, ttl: int = 900) -> list[dict]:
+async def home_list(db: aiosqlite.Connection, steam: SteamClient, tab: str, limit: int, genre: int | None = None, ttl: int = 900) -> list[dict]:
     """Curated home tabs from Steam's own store listing (games only). Ordered ids cached for `ttl` seconds."""
     from ..steam.parsers import parse_search_html
 
-    key = f"home:{tab}"
+    key = f"home:{tab}:{genre or 0}"
     ids = await cache_get(db, key)
     if ids is None:
-        data = await steam.search_page(0, 24, "koreana", **HOME_TABS[tab])
+        data = await steam.search_page(0, 24, "koreana", **HOME_TABS[tab], **({"tags": genre} if genre else {}))
         rows = parse_search_html(data.get("results_html", ""))
         for r in rows:
             await upsert_listing(db, r, "koreana")

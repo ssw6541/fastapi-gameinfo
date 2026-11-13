@@ -62,6 +62,7 @@ export default function Game() {
             {p && (p.discount_percent ?? 0) > 0 && p.initial != null && <s className="muted">₩{Math.round(p.initial).toLocaleString('ko-KR')}</s>}
             <strong className="bigprice">{g.coming_soon ? '출시 예정' : fmtPrice(p, g.is_free)}</strong>
             <a className="btn primary" href={g.store_url} target="_blank" rel="noopener noreferrer">Steam 상점 ↗</a>
+            <a className="btn" href={`steam://store/${g.appid}`} title="Steam 앱이 설치되어 있으면 앱에서 바로 엽니다">Steam 앱에서 열기</a>
           </div>
           {g.genres.length > 0 && <div className="chips static">{g.genres.map((x) => <span className="chip" key={x}>{x}</span>)}</div>}
         </div>

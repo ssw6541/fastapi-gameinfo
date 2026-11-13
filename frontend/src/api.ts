@@ -118,6 +118,13 @@ export interface ReviewStats {
   }
   cached: boolean
 }
+export interface Me {
+  logged_in: boolean
+  steamid?: string
+  name?: string | null
+  avatar?: string | null
+  profile_url?: string
+}
 export interface Genre {
   id: number
   name: string

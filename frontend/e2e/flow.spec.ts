@@ -113,3 +113,34 @@ test('home carousel and tabs', async ({ page }) => {
   await page.getByRole('button', { name: /PRESS START/ }).click()
   await expect(page).toHaveURL(/\/game\/\d+/)
 })
+
+test('genre chips on every tab, topbar search after scroll, menu, steam login link', async ({ page }) => {
+  await page.goto('/?tab=new')
+  await expect(page.getByRole('tab', { name: '신작', exact: true })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.locator('.grid a.card').first()).toBeVisible({ timeout: 30_000 })
+  await page.locator('.chips').getByRole('button', { name: 'RPG' }).click()
+  await expect(page.locator('.grid a.card .tags').first()).toContainText('RPG', { timeout: 30_000 })
+  await expect(page.locator('.grid a.card').first()).toBeVisible()
+
+  // topbar search appears after the hero search scrolls away and works
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await expect(page.locator('.topsearch.hidden')).toHaveCount(1)
+  await page.evaluate(() => window.scrollTo(0, 1200))
+  await expect(page.locator('.topsearch.hidden')).toHaveCount(0)
+  const box = page.locator('.topsearch').getByRole('searchbox')
+  await box.fill('hades')
+  await box.press('Enter')
+  await expect(page).toHaveURL(/\/search\?q=hades/)
+
+  // menu button
+  await page.getByRole('button', { name: /MENU/ }).click()
+  await page.getByRole('link', { name: /할인 중/ }).click()
+  await expect(page).toHaveURL(/tab=sale/)
+  await expect(page.getByRole('tab', { name: '할인 중', exact: true })).toHaveAttribute('aria-selected', 'true')
+
+  // login button points at our OpenID start endpoint (we do not complete a real Steam login in tests)
+  await expect(page.getByRole('link', { name: /Steam 로그인/ })).toHaveAttribute('href', /\/api\/auth\/steam\/login\?next=/)
+  const res = await page.request.get('/api/auth/steam/login?next=/', { maxRedirects: 0 })
+  expect(res.status()).toBe(302)
+  expect(res.headers()['location']).toContain('https://steamcommunity.com/openid/login')
+})

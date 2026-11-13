@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api import auth as auth_api
 from .api import games as games_api
 from .api import system as system_api
 from .config import get_settings
@@ -48,7 +49,7 @@ def create_app(settings=None, steam: SteamClient | None = None) -> FastAPI:
         openapi_url=None if s.is_production else "/openapi.json",
     )
     app.add_middleware(
-        CORSMiddleware, allow_origins=s.cors_origin_list, allow_methods=["GET", "POST"],
+        CORSMiddleware, allow_origins=s.cors_origin_list, allow_methods=["GET", "POST"], allow_credentials=True,
         allow_headers=["Content-Type", "X-Admin-Token"],
     )
 
@@ -63,6 +64,7 @@ def create_app(settings=None, steam: SteamClient | None = None) -> FastAPI:
     app.include_router(system_api.router)
     app.include_router(system_api.admin)
     app.include_router(games_api.router)
+    app.include_router(auth_api.router)
     return app
 
 

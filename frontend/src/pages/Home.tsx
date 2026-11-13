@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api, fmtNum, type Genre, type GameSummary, type Status } from '../api'
 import Carousel from '../components/Carousel'
 import SearchBox from '../components/SearchBox'
@@ -18,13 +18,16 @@ export default function Home() {
   const [genre, setGenre] = useState<number | null>(null)
   const genres = useQuery({ queryKey: ['genres'], queryFn: ({ signal }) => api<Genre[]>('/genres', undefined, signal) })
   const status = useQuery({ queryKey: ['status'], queryFn: ({ signal }) => api<Status>('/status', undefined, signal) })
-  const [tab, setTab] = useState<Tab>('popular')
+  const [sp, setSp] = useSearchParams()
+  const tabParam = sp.get('tab')
+  const tab: Tab = TABS.some((x) => x.id === tabParam) ? (tabParam as Tab) : 'popular'
+  const setTab = (t: Tab) => setSp(t === 'popular' ? {} : { tab: t }, { replace: true })
   const feat = useQuery({
     queryKey: ['home', tab, genre],
     queryFn: ({ signal }) =>
       tab === 'popular'
         ? api<GameSummary[]>('/games/featured', { genre, limit: 12 }, signal)
-        : api<GameSummary[]>('/games/home', { tab, limit: 12 }, signal),
+        : api<GameSummary[]>('/games/home', { tab, genre, limit: 12 }, signal),
   })
   const cur = TABS.find((x) => x.id === tab)!
 
@@ -34,7 +37,7 @@ export default function Home() {
         <div className="coin px">★ INSERT COIN ★</div>
         <h1>Steam 게임, <span className="grad">한 번에 검색</span>하고 리뷰까지</h1>
         <p>영어·한국어 이름으로 게임을 찾고, 상세 정보와 실제 Steam 사용자 리뷰를 필터링해 보세요.</p>
-        <SearchBox autoFocus />
+        <div id="hero-search"><SearchBox autoFocus /></div>
         {status.data && (
           <p className="muted small hero-note">
             수집된 게임 {fmtNum(status.data.catalog.games)}개 · 목록에 없는 게임도 검색 시 Steam에서 바로 찾아옵니다.
@@ -53,7 +56,7 @@ export default function Home() {
             <button key={x.id} role="tab" aria-selected={tab === x.id} className={`tab ${tab === x.id ? 'on' : ''}`} onClick={() => setTab(x.id)}>{x.label}</button>
           ))}
         </div>
-        {tab === 'popular' && (
+        {(
           <div className="chips" role="group" aria-label="장르 필터">
             <button className={`chip ${genre === null ? 'on' : ''}`} onClick={() => setGenre(null)}>전체</button>
             {genres.data?.map((g) => (

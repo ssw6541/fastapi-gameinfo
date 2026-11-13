@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+import re
 import time
 from typing import Any
 
@@ -126,6 +127,28 @@ class SteamClient:
         if not isinstance(resp, dict) or "query_summary" not in resp:
             raise UpstreamError("Steam 리뷰 응답 형식이 올바르지 않습니다.")
         return resp
+
+    async def openid_check(self, params: dict[str, str]) -> bool:
+        """Ask Steam to verify an OpenID assertion (server-to-server; never trust the browser's claim)."""
+        data = {**params, "openid.mode": "check_authentication"}
+        try:
+            r = await self._http.post(f"{self.s.steam_community_base_url}/openid/login", data=data)
+        except (httpx.TimeoutException, httpx.TransportError):
+            raise UpstreamError("Steam 로그인 서버에 연결할 수 없습니다.", 504, "steam_timeout")
+        return r.status_code == 200 and "is_valid:true" in r.text
+
+    async def community_profile(self, steamid: str) -> dict | None:
+        """Public profile (name/avatar) from the community XML feed - no API key required."""
+        try:
+            r = await self._http.get(f"{self.s.steam_community_base_url}/profiles/{steamid}/", params={"xml": 1})
+        except (httpx.TimeoutException, httpx.TransportError):
+            return None
+        if r.status_code != 200:
+            return None
+        name = re.search(r"<steamID><!\[CDATA\[(.*?)\]\]></steamID>", r.text, re.S)
+        av = re.search(r"<avatarFull><!\[CDATA\[(.*?)\]\]></avatarFull>", r.text)
+        avatar = av[1] if av and av[1].startswith("https://") else None
+        return {"name": name[1] if name else None, "avatar": avatar}
 
     async def app_list(self, last_appid: int = 0, max_results: int = 50000) -> dict:
         if not self.s.steam_api_key:

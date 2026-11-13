@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
-import SearchBox from './components/SearchBox'
+import Topbar from './components/Topbar'
 import { EmptyState, Spinner } from './components/common'
 import Home from './pages/Home'
 import Search from './pages/Search'
@@ -12,14 +12,7 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
   return (
     <>
-      <header className="topbar">
-        <div className="container topbar-in">
-          <Link to="/" className="brand" aria-label="GameLens 홈">
-            <span className="logo" aria-hidden>◆</span> <span className="px">GAMELENS</span>
-          </Link>
-          {pathname !== '/' && <SearchBox compact />}
-        </div>
-      </header>
+      <Topbar />
       <main className="container">
         <Suspense fallback={<Spinner />}>
         <Routes>

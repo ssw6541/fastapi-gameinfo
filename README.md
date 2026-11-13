@@ -22,6 +22,9 @@ start-dev.ps1  Windows 개발 서버 실행 스크립트
 ## 환경변수
 `backend/.env.example`, `frontend/.env.example` 참고. `STEAM_API_KEY`는 선택(전체 앱 목록 `IStoreService/GetAppList` 수집 전용, https://steamcommunity.com/dev/apikey 에서 발급). 백엔드에만 두며 로그에서 마스킹됩니다. `VITE_*` 값은 브라우저에 공개됩니다. `ADMIN_TOKEN`을 설정해야 `/api/admin/*`(X-Admin-Token 헤더)가 활성화됩니다.
 
+## Steam 로그인
+Steam 공식 OpenID 로그인(`/api/auth/steam/login`)을 사용합니다. 비밀번호는 이 앱에 전달되지 않고, 앱은 SteamID만 서명된 HttpOnly 쿠키로 보관합니다. `PUBLIC_BASE_URL`(사용자가 보는 사이트 주소)과 `SESSION_SECRET`을 설정해야 하며, Vercel 프록시 사용 시 쿠키가 Vercel 도메인에 설정됩니다.
+
 ## 데이터 수집
 ```powershell
 cd backend

@@ -63,6 +63,12 @@ class Recorder:
         if "search/results" in url:
             self.search_params = dict(request.url.params)
             return httpx.Response(200, json={"success": 1, "results_html": SEARCH_HTML, "total_count": 2})
+        if "openid/login" in url:
+            self.openid_body = request.content.decode()
+            ok = "true" if getattr(self, "openid_ok", True) else "false"
+            return httpx.Response(200, text=f"ns:http://specs.openid.net/auth/2.0\nis_valid:{ok}\n")
+        if "steamcommunity.com/profiles" in url:
+            return httpx.Response(200, text="<profile><steamID><![CDATA[Tester]]></steamID><avatarFull><![CDATA[https://avatars.example/a.jpg]]></avatarFull></profile>")
         if "storesearch" in url:
             return httpx.Response(200, json={"total": 0, "items": []})
         if "GetAppList" in url:
@@ -216,3 +222,64 @@ def test_home_tabs(ctx):
     assert c.get("/api/games/home?tab=new").status_code == 200
     assert rec.search_params["filter"] == "popularnew"
     assert c.get("/api/games/home?tab=hack").status_code == 422
+
+
+SID = "76561198000000001"
+
+
+def _cb(next_="/game/1", **over):
+    q = {"openid.ns": "http://specs.openid.net/auth/2.0", "openid.mode": "id_res",
+         "openid.return_to": "http://localhost:5173/api/auth/steam/callback?next=%2Fgame%2F1",
+         "openid.claimed_id": f"https://steamcommunity.com/openid/id/{SID}",
+         "openid.identity": f"https://steamcommunity.com/openid/id/{SID}", "openid.sig": "x", "next": next_}
+    q.update(over)
+    return q
+
+
+def test_login_redirect_and_open_redirect_guard(ctx):
+    c, _, _ = ctx
+    r = c.get("/api/auth/steam/login?next=//evil.com", follow_redirects=False)
+    assert r.status_code == 302 and r.headers["location"].startswith("https://steamcommunity.com/openid/login?")
+    assert "evil.com" not in r.headers["location"] and "next%3D%252F" in r.headers["location"]
+
+
+def test_callback_success_sets_signed_cookie_and_me(ctx):
+    c, rec, _ = ctx
+    r = c.get("/api/auth/steam/callback", params=_cb(), follow_redirects=False)
+    assert r.status_code == 302 and r.headers["location"] == "http://localhost:5173/game/1"
+    assert "check_authentication" in rec.openid_body and "HttpOnly" in r.headers["set-cookie"]
+    me = c.get("/api/auth/me").json()
+    assert me["logged_in"] and me["steamid"] == SID and me["name"] == "Tester"
+    assert c.post("/api/auth/logout").json()["logged_in"] is False
+    c.cookies.clear()
+    assert c.get("/api/auth/me").json() == {"logged_in": False}
+
+
+def test_callback_rejects_bad_assertions(ctx):
+    c, rec, _ = ctx
+    for over in ({"openid.claimed_id": "https://evil.com/openid/id/" + SID}, {"openid.mode": "cancel"},
+                 {"openid.return_to": "http://evil.com/api/auth/steam/callback"},
+                 {"openid.identity": "https://steamcommunity.com/openid/id/76561198000000002"}):
+        r = c.get("/api/auth/steam/callback", params=_cb(**over), follow_redirects=False)
+        assert "login=failed" in r.headers["location"] and "set-cookie" not in r.headers
+    rec.openid_ok = False  # Steam says the assertion is invalid
+    r = c.get("/api/auth/steam/callback", params=_cb(), follow_redirects=False)
+    assert "login=failed" in r.headers["location"] and "set-cookie" not in r.headers
+
+
+def test_forged_and_expired_sessions(ctx):
+    from app.api.auth import read_session, sign_session
+    c, _, s = ctx
+    tok = sign_session(s, SID)
+    assert read_session(s, tok) == SID
+    assert read_session(s, tok[:-2] + "00") is None
+    assert read_session(s, sign_session(s, SID, now=1)) is None  # expired
+    c.cookies.set("gl_session", "e30=.deadbeef")
+    assert c.get("/api/auth/me").json() == {"logged_in": False}
+
+
+def test_home_genre(ctx):
+    c, rec, _ = ctx
+    assert c.get("/api/games/home?tab=new&genre=122").status_code == 200
+    assert rec.search_params["tags"] == "122"
+    assert c.get("/api/games/home?tab=new&genre=999999").status_code == 422

@@ -71,6 +71,12 @@ async def featured(db: Db, genre: Annotated[int | None, Query()] = None, limit: 
     return items
 
 
+@router.get("/games/home", response_model=list[GameSummary], summary="홈 탭: 신작/할인/출시 예정")
+async def home_tab(db: Db, steam: Steam, tab: Annotated[str, Query(pattern="^(new|sale|upcoming)$")],
+                   limit: Annotated[int, Query(ge=1, le=24)] = 12):
+    return await catalog.home_list(db, steam, tab, limit)
+
+
 @router.get("/games/{appid}", response_model=GameDetail, summary="게임 상세 정보")
 async def game_detail(appid: AppId, db: Db, steam: Steam, s: Cfg):
     return await games.get_game(db, steam, s, appid)

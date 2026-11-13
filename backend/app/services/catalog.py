@@ -209,6 +209,39 @@ async def live_discover(db: aiosqlite.Connection, steam: SteamClient, q: str, tt
     return n
 
 
+HOME_TABS = {
+    "new": {"filter": "popularnew", "sort_by": "Released_DESC"},  # 신작 (최신 출시순)
+    "sale": {"specials": 1},                                       # 할인 중 (리뷰 많은 순)
+    "upcoming": {"filter": "popularcomingsoon", "sort_by": None},  # 출시 예정 (인기순)
+}
+
+
+async def home_list(db: aiosqlite.Connection, steam: SteamClient, tab: str, limit: int, ttl: int = 900) -> list[dict]:
+    """Curated home tabs from Steam's own store listing (games only). Ordered ids cached for `ttl` seconds."""
+    from ..steam.parsers import parse_search_html
+
+    key = f"home:{tab}"
+    ids = await cache_get(db, key)
+    if ids is None:
+        data = await steam.search_page(0, 24, "koreana", **HOME_TABS[tab])
+        rows = parse_search_html(data.get("results_html", ""))
+        for r in rows:
+            await upsert_listing(db, r, "koreana")
+        await db.commit()
+        ids = [r["appid"] for r in rows]
+        await cache_set(db, key, ids, ttl)
+    ids = ids[:limit]
+    if not ids:
+        return []
+    async with db.execute(f"SELECT * FROM games WHERE appid IN ({','.join('?' * len(ids))})", ids) as c:
+        by_id = {r["appid"]: r for r in await c.fetchall()}
+    tags: dict[int, list[int]] = {i: [] for i in ids}
+    async with db.execute(f"SELECT appid, tag_id FROM game_tags WHERE appid IN ({','.join('?' * len(ids))})", ids) as c:
+        for t in await c.fetchall():
+            tags[t["appid"]].append(t["tag_id"])
+    return [to_summary(by_id[i], tags[i]) for i in ids if i in by_id]
+
+
 async def list_genres(db: aiosqlite.Connection) -> list[dict]:
     counts: dict[int, int] = {}
     async with db.execute("SELECT tag_id, COUNT(*) n FROM game_tags GROUP BY tag_id") as c:

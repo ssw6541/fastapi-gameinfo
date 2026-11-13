@@ -96,3 +96,20 @@ test.describe('mobile', () => {
     }
   })
 })
+
+test('home carousel and tabs', async ({ page }) => {
+  await page.goto('/')
+  const stage = page.locator('.cx-top .dim')
+  await expect(stage).toContainText('STAGE 01', { timeout: 20_000 })
+  await page.getByRole('button', { name: '다음 게임' }).click()
+  await expect(stage).toContainText('STAGE 02')
+  await page.locator('.carousel').focus()
+  await page.keyboard.press('ArrowLeft')
+  await expect(stage).toContainText('STAGE 01')
+  for (const name of ['신작', '할인 중', '출시 예정']) {
+    await page.getByRole('tab', { name, exact: true }).click()
+    await expect(page.locator('.grid a.card').first()).toBeVisible({ timeout: 30_000 })
+  }
+  await page.getByRole('button', { name: /PRESS START/ }).click()
+  await expect(page).toHaveURL(/\/game\/\d+/)
+})

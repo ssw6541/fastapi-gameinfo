@@ -60,6 +60,9 @@ class Recorder:
                                   "total_positive": 90, "total_negative": 10, "total_reviews": 100},
                 "reviews": [make_review(i, payload["languages"][0] if payload["languages"][0] != "all" else "korea") for i in range(n)],
                 "cursor": "AoJ4+/=" if payload.get("cursor", "*") == "*" else payload["cursor"]}})
+        if "search/results" in url:
+            self.search_params = dict(request.url.params)
+            return httpx.Response(200, json={"success": 1, "results_html": SEARCH_HTML, "total_count": 2})
         if "storesearch" in url:
             return httpx.Response(200, json={"total": 0, "items": []})
         if "GetAppList" in url:
@@ -199,3 +202,17 @@ def test_rate_limit(tmp_path):
 def test_disallowed_steam_url():
     with pytest.raises(Exception):
         Settings(steam_api_base_url="https://evil.example.com", _env_file=None)
+
+
+def test_home_tabs(ctx):
+    c, rec, _ = ctx
+    items = c.get("/api/games/home?tab=sale&limit=5").json()
+    assert [i["appid"] for i in items] == [1245620, 220]
+    assert items[0]["price"]["discount_percent"] == 20 and items[0]["review_pct"] == 94
+    assert rec.search_params["specials"] == "1" and rec.search_params["category1"] == "998"
+    n = len(rec.calls)
+    c.get("/api/games/home?tab=sale")
+    assert len(rec.calls) == n  # cached
+    assert c.get("/api/games/home?tab=new").status_code == 200
+    assert rec.search_params["filter"] == "popularnew"
+    assert c.get("/api/games/home?tab=hack").status_code == 422

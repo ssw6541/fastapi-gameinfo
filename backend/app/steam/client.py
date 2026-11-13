@@ -94,11 +94,13 @@ class SteamClient:
         )
         return list((data or {}).get("items") or [])
 
-    async def search_page(self, start: int, count: int, lang: str, sort_by: str = "Reviews_DESC") -> dict:
+    async def search_page(self, start: int, count: int, lang: str, sort_by: str | None = "Reviews_DESC",
+                          **extra: Any) -> dict:
+        """Store listing (games only). extra: filter=popularnew|comingsoon|topsellers, specials=1 ..."""
         return await self.get_json(
             f"{self.s.steam_store_base_url}/search/results/",
-            {"query": "", "start": start, "count": count, "sort_by": sort_by, "category1": 998,
-             "infinite": 1, "json": 1, "l": lang, "cc": "kr"},
+            {"query": "", "start": start, "count": count, "category1": 998, "infinite": 1, "json": 1,
+             "l": lang, "cc": "kr", **({"sort_by": sort_by} if sort_by else {}), **extra},
         )
 
     async def reviews(self, appid: int, *, filter: str = "helpful", language: str = "all", review_type: str = "all",

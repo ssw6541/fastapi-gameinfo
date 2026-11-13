@@ -110,6 +110,7 @@ def parse_search_html(page: str) -> list[dict]:
         if not title:
             continue
         tags = re.search(r'data-ds-tagids="\[([\d,\s]*)\]"', body)
+        cap = re.search(r'search_capsule"><img src="([^"]+)"', body)
         rel = re.search(r'search_released[^>]*>\s*(.*?)\s*</div>', body, re.S)
         price = re.search(r'data-price-final="(\d+)"', body)
         disc = re.search(r'data-discount="(-?\d+)"', body)
@@ -127,6 +128,7 @@ def parse_search_html(page: str) -> list[dict]:
         rows.append({
             "appid": appid,
             "title": html.unescape(title[1]).strip(),
+            "capsule_url": html.unescape(cap[1]) if cap and cap[1].startswith("https://") else None,
             "tag_ids": [int(x) for x in tags[1].split(",") if x.strip()] if tags else [],
             "release_date": release_text or None,
             "release_ts": parse_release_ts(release_text),

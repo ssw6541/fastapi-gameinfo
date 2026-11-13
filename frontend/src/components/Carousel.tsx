@@ -8,8 +8,10 @@ const AUTOPLAY_MS = 5500
 // 616x353 capsule art carries the game's logo (stronger identity than the 460x215 header); newer apps only
 // have hashed asset URLs, so fall back to the API-provided header, then hide.
 const bigArt = (appid: number) => `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_616x353.jpg`
-function fallback(img: HTMLImageElement, headerUrl: string) {
-  if (img.dataset.fb !== '1') { img.dataset.fb = '1'; img.src = headerUrl } else img.style.visibility = 'hidden'
+function fallback(img: HTMLImageElement, g: GameSummary) {
+  const chain = [g.header_image, g.capsule_image]
+  const i = Number(img.dataset.fb ?? 0)
+  if (i < chain.length) { img.dataset.fb = String(i + 1); img.src = chain[i] } else img.style.visibility = 'hidden'
 }
 
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -123,7 +125,7 @@ export default function Carousel() {
                 else go(i)
               }}
             >
-              <img src={bigArt(g.appid)} alt="" draggable={false} onError={(e) => fallback(e.currentTarget, g.header_image)} />
+              <img src={bigArt(g.appid)} alt="" draggable={false} onError={(e) => fallback(e.currentTarget, g)} />
               <div className="cx-shine" aria-hidden />
             </div>
           )

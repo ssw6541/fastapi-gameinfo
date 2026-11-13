@@ -2,6 +2,11 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, fmtNum, fmtPrice, type GameSummary } from '../api'
 
+/** If the primary image 404s (newer Steam apps use hashed URLs), try the fallback once, then hide. */
+export function imgFallback(img: HTMLImageElement, alt: string) {
+  if (img.dataset.fb !== '1') { img.dataset.fb = '1'; img.src = alt } else img.style.visibility = 'hidden'
+}
+
 export function Spinner({ label = '불러오는 중…' }: { label?: string }) {
   return (
     <div className="spinner-wrap" role="status" aria-live="polite">
@@ -56,7 +61,7 @@ export function GameCard({ g }: { g: GameSummary }) {
   return (
     <Link to={`/game/${g.appid}`} className="card">
       <div className="card-img">
-        <img src={g.header_image} alt="" loading="lazy" onError={(e) => ((e.currentTarget.style.visibility = 'hidden'))} />
+        <img src={g.header_image} alt="" loading="lazy" onError={(e) => imgFallback(e.currentTarget, g.capsule_image)} />
         {disc > 0 && <span className="disc">-{disc}%</span>}
       </div>
       <div className="card-body">

@@ -45,8 +45,8 @@ async def upsert_listing(db: aiosqlite.Connection, row: dict, lang: str) -> None
     name_col = "name_en" if lang == "english" else "name_ko"
     await db.execute(
         f"""INSERT INTO games(appid, {name_col}, release_date, release_ts, price_final, discount_percent,
-                              currency, review_pct, review_count, listed_at, updated_at)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?)
+                              currency, review_pct, review_count, capsule_url, listed_at, updated_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
             ON CONFLICT(appid) DO UPDATE SET
               {name_col}=excluded.{name_col},
               release_date=COALESCE(excluded.release_date, release_date),
@@ -56,10 +56,11 @@ async def upsert_listing(db: aiosqlite.Connection, row: dict, lang: str) -> None
               currency=COALESCE(excluded.currency, currency),
               review_pct=COALESCE(excluded.review_pct, review_pct),
               review_count=COALESCE(excluded.review_count, review_count),
+              capsule_url=COALESCE(excluded.capsule_url, capsule_url),
               updated_at=excluded.updated_at""",
         (row["appid"], row["title"], row.get("release_date"), row.get("release_ts"), row.get("price_final"),
          row.get("discount_percent"), "KRW" if row.get("price_final") is not None else None,
-         row.get("review_pct"), row.get("review_count"), now, now),
+         row.get("review_pct"), row.get("review_count"), row.get("capsule_url"), now, now),
     )
     for t in row.get("tag_ids", []):
         if t in GENRE_TAGS:
@@ -89,7 +90,7 @@ def to_summary(r: aiosqlite.Row, genre_ids: list[int] | None = None) -> dict:
         "name_en": r["name_en"],
         "name_ko": ko,
         "header_image": r["header_url"] or header_image(appid),
-        "capsule_image": capsule_image(appid),
+        "capsule_image": r["capsule_url"] or capsule_image(appid),
         "release_date": r["release_date"],
         "release_ts": r["release_ts"],
         "is_free": is_free,

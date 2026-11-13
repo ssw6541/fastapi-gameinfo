@@ -5,6 +5,13 @@ import { api, fmtNum, fmtPrice, type GameSummary } from '../api'
 
 const AUTOPLAY_MS = 5500
 
+// 616x353 capsule art carries the game's logo (stronger identity than the 460x215 header); newer apps only
+// have hashed asset URLs, so fall back to the API-provided header, then hide.
+const bigArt = (appid: number) => `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/capsule_616x353.jpg`
+function fallback(img: HTMLImageElement, headerUrl: string) {
+  if (img.dataset.fb !== '1') { img.dataset.fb = '1'; img.src = headerUrl } else img.style.visibility = 'hidden'
+}
+
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Arcade "stage select" carousel: coverflow layout, autoplay, drag/swipe, keyboard, mouse tilt. */
@@ -100,7 +107,7 @@ export default function Carousel() {
               key={g.appid}
               className={`cx-slide ${isActive ? 'active' : ''}`}
               style={{
-                transform: `translateX(calc(${o} * 58%)) scale(${1 - abs * 0.16}) ${isActive ? 'rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))' : `rotateY(${o * -14}deg)`}`,
+                transform: `translateX(calc(${o} * 52%)) scale(${1 - abs * 0.16}) ${isActive ? 'rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))' : `rotateY(${o * -14}deg)`}`,
                 zIndex: 10 - abs,
                 opacity: abs > 2 ? 0 : 1 - abs * 0.3,
                 pointerEvents: abs > 2 ? 'none' : 'auto',
@@ -116,7 +123,7 @@ export default function Carousel() {
                 else go(i)
               }}
             >
-              <img src={g.header_image} alt="" draggable={false} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
+              <img src={bigArt(g.appid)} alt="" draggable={false} onError={(e) => fallback(e.currentTarget, g.header_image)} />
               <div className="cx-shine" aria-hidden />
             </div>
           )
